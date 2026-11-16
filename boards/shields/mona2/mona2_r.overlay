@@ -85,12 +85,37 @@
     x-codes = <INPUT_REL_X>;
     y-codes = <INPUT_REL_Y>;
     xy-to-scroll-enabled;
-    active-layers = <0x000000C0>; /* layer6 + layer7 */
+    active-layers = <0x00000020>; /* layer 5 (scroll)。Conductor の並びに合わせた（upstream は layer 6+7） */
     scale-multiplier = <1>;
     scale-divisor = <1>;   /* Studio UI の倍率がそのまま実効値 (1.0x基準)。固定減速は listener 側 zip_scroll_scaler */
 };
 
 &mouse_runtime_input_processor {
+};
+
+/* ─────────────────────────────────────────────────────────────
+   Precision（精密）モード: layer 12 がオンの間だけカーソルを 3/5 (60%) にする。
+   CLine46 で sz5g が実機で OK を出した値。setting レイヤーの &tog 12 でオン/オフ。
+   runtime processor なので DYA Studio からも倍率を変えられる（ラベル "prec"）。
+   スクロール中は X/Y がホイールに変換済みなので、この processor は何もしない。
+   ────────────────────────────────────────────────────── */
+/ {
+    precision_runtime_input_processor: precision_runtime_input_processor {
+        compatible = "zmk,input-processor-runtime";
+        processor-label = "prec";
+        type = <INPUT_EV_REL>;
+        x-codes = <INPUT_REL_X>;
+        y-codes = <INPUT_REL_Y>;
+        scale-multiplier = <3>;
+        scale-divisor = <5>;
+        rotation-degrees = <0>;
+        track-remainders;
+        active-layers = <0x00001000>; /* layer 12 */
+        temp-layer-transparent-behavior = <&trans>;
+        temp-layer-kp-behavior = <&kp>;
+        temp-layer-keep-keycodes = <LEFT_CONTROL LEFT_SHIFT LEFT_ALT LEFT_GUI RIGHT_CONTROL RIGHT_SHIFT RIGHT_ALT RIGHT_GUI>;
+        #input-processor-cells = <0>;
+    };
 };
 
 /* ─────────────────────────────────────────────────────────────
@@ -125,5 +150,5 @@
     /* Keep scroll independent of pointer scaling. Emit one step per 60
      * counts: gentler than 1/40, while retaining a lower onset threshold
      * than the original 1/100. Fractional counts are accumulated. */
-    input-processors = <&mg &scroll_runtime_input_processor &mouse_runtime_input_processor &zip_scroll_scaler 1 60 &inertial_scroll>;
+    input-processors = <&mg &scroll_runtime_input_processor &mouse_runtime_input_processor &precision_runtime_input_processor &zip_scroll_scaler 1 60 &inertial_scroll>;
 };
